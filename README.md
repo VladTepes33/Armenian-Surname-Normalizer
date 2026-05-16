@@ -178,7 +178,7 @@ armenian-normalizer/
 ├── src/
 │   └── ArmenianNormalizer.php   # All normalization functions
 ├── php/
-│   └── ArmenianNormalizerTest.php
+│   └── test_surnames.php
 └── README.md
 ```
 
