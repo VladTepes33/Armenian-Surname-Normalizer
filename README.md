@@ -177,7 +177,7 @@ The next version will incorporate nominal root analysis during canonical form ge
 armenian-normalizer/
 ├── src/
 │   └── ArmenianNormalizer.php   # All normalization functions
-├── tests/
+├── php/
 │   └── ArmenianNormalizerTest.php
 └── README.md
 ```
