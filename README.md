@@ -8,8 +8,7 @@ The goal is to group orthographic variants of the same surname under a single ca
 In the context of Armenian names drawn from archival records and civil registries across Europe, the challenge is amplified by inconsistent transliteration practices. 
 The same Armenian name may appear in multiple forms depending on the country, language, or even the clerk who recorded it—using French, German, Russian, or other Latin-based conventions. Diacritics may be added or omitted, phonetic approximations vary, and spellings shift over time.
 
-As a result, standard SQL LIKE or SOUNDEX queries miss many valid matches, since they rely on surface-level similarity rather than deeper phonetic or structural equivalence. 
-At the same time, n-gram–based full-text search mechanisms—which are better suited to capturing these variations—are rarely available natively on shared hosting platforms.
+As a result, standard SQL LIKE or SOUNDEX queries miss many valid matches, since they rely on surface-level similarity rather than deeper phonetic or structural equivalence. At the same time, n-gram–based full-text search mechanisms or more advanced engines like Lucene and ElasticSearch which are better suited to capturing these variations, are rarely available natively on shared hosting platforms.
 
 This project is designed to bridge that gap by introducing a normalization and matching approach tailored to these historical and linguistic inconsistencies, 
 making it possible to retrieve relevant records despite significant spelling variation.
