@@ -145,7 +145,7 @@ The cutoff threshold is intentionally permissive to maximize recall. The bonuses
 
 ## Live Deployment
 
-This library is deployed at [alexvladesco.fr/us/search.php](https://alexvladesco.fr/us/search.php),
+This architecture is deployed at [alexvladesco.fr/us/search.php](https://alexvladesco.fr/us/search.php),
 where it powers the Armenian surname search across digitized diaspora archives.
 
 The next version will incorporate nominal root analysis during canonical form generation.
