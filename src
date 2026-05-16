@@ -1,0 +1,177 @@
+<?php
+/**
+ * Armenian Name Normalizer v1
+ *
+ * GLOBAL CONTRACT:
+ * - Converts Armenian surnames (Latin transliteration) into a canonical phonetic form
+ * - Designed for fuzzy matching across diaspora archival records
+ *
+ * KEY GOAL:
+ * - Merge orthographic variants of the same surname into a single normalized key
+ *
+ * DEPLOYMENT CONSTRAINTS:
+ * - Must run in shared hosting / low-resource environments (no external dependencies)
+ * - Must be deterministic (same input → same output)
+ * - Must be stable across refactors (idempotent output expected)
+ *
+ * EXAMPLES OF EXPECTED OUTPUT:
+ * - Hagopian / Hagopyan / Der Hagopian → agopian
+ * - Petrossian → petrosian
+ * - Krikorian → krikorian
+ * - Grigorian → grigorian
+ * - Terzibachian → terzibakian
+ * - Frenghian → frenkian
+ */
+function armenianNormalizer_v1(string $s): string
+{
+    $s = _step1_lowercase_and_accents($s);
+    $s = _step2_nasales($s);
+    $s = _step31_phonetic_digraphs($s);
+    $s = _step4_sh_zh($s);
+    $s = _step5_vowel_digraphs($s);
+    $s = _step6_deduplicate($s);
+    $s = _step7_prefixes($s);
+    $s = _step8_suffixes($s);
+    $s = _step9_final_adjustments($s);
+    return _step10_strip_separators($s);
+}
+
+// ---------------------------------------------------------------------------
+// Étapes
+// ---------------------------------------------------------------------------
+
+function _step1_lowercase_and_accents(string $s): string
+{
+    $s = mb_strtolower($s, 'UTF-8');
+    return strtr($s, [
+        'é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',
+        'à'=>'a','â'=>'a',
+        'î'=>'i','ï'=>'i',
+        'ô'=>'o','ö'=>'o',
+        'ù'=>'u','û'=>'u','ü'=>'u',
+        'ç'=>'c',
+    ]);
+}
+
+function _step2_nasales(string $s): string
+{
+    // Order: longest first to avoid partial substitutions
+    return str_replace(
+        ['ngui','ngi','ngu','ngh','ng','nnk','nkk'],
+        ['nki', 'nki','nk', 'nk', 'nk','nk', 'nk'],
+        $s
+    );
+}
+
+function _step3_phonetic_digraphs(string $s): string
+{
+    // tch between ch, dj between d, etc.  — The order is intentional.
+    return str_replace(
+        ['tch','dj','dz','tz','ch','kh','gh','ph','th','ck'],
+        ['j',  'j', 'ts','ts','k','k', 'g', 'f', 't', 'k'],
+        $s
+    );
+}
+
+function _step31_phonetic_digraphs(string $s): string
+{
+    // tch between ch, dj between d, etc.  — The order is intentional.
+    return str_replace(
+        ['tch','dj','dz','tz','ch','kh','gh','ph','th','ck'],
+        ['j',  'j', 'ts','ts','ch','k', 'g', 'f', 't', 'k'],
+        $s
+    );
+}
+
+function _step4_sh_zh(string $s): string
+{
+    // sh produced in step 3 (ch→sh) is immediately simplified here
+   // return str_replace(['sh','zh'], ['s','z'], $s);
+   return$s;
+}
+
+function _step5_vowel_digraphs(string $s): string
+{
+    return str_replace(
+      //    ['ou','oo','ue','eu','oe','ae','ai','ei'],
+      //    ['u', 'u', 'u', 'e', 'e', 'e', 'e', 'e'],
+      ['ou','oo','ue','eu','oe','ae','ei'],
+      ['u', 'u', 'u', 'e', 'e', 'e' , 'e'],
+        $s
+    );
+}
+
+function _step6_deduplicate(string $s): string
+{
+    // Reduces any sequence of identical characters to a single
+    return preg_replace('/(.)\1+/', '$1', $s);
+}
+
+function _step7_prefixes(string $s): string
+{
+    // Full honorific prefixes (with space or hyphen)
+    $s = preg_replace('/^(der|ter|hadji|haci|ben|melik)[\s-]+/u', '', $s);
+
+   // Short prefixes are only removed if the name is long (avoids false positives)
+    //if (mb_strlen($s, 'UTF-8') >= 11) {
+    //    $s = preg_replace('/^(der|ter|ben|kara)/u', '', $s);
+    //
+
+    return $s;
+}
+
+function _step8_suffixes(string $s): string
+{
+    $suffixes = [
+        6 => '(ounian|unian)',
+        5 => '(iantz|yantz|iants|yants|ients|ientc)',
+        4 => '(iadis|iades|ianc|ians|iane|iene|iens|yant|entz|entc|ouni)',
+        3 => '(yan|ean|jan)',
+    ];
+
+    foreach ($suffixes as $len => $pattern) {
+        if (preg_match('/'.$pattern.'$/u', $s)) {
+            return mb_substr($s, 0, -$len, 'UTF-8').'ian';
+        }
+    }
+
+    return $s;
+}
+
+function _step9_final_adjustments(string $s): string
+{
+    // guian / gian → kian
+    $s = preg_replace('/gu?ian$/u', 'kian', $s);
+
+    // ok / okian → uk / ukian  (voyelle finale o → u avant k)
+    $s = preg_replace('/o(k(?:ian)?)$/u', 'u$1', $s);
+
+    // [gjk]ien ou [gjk]ian → kian  (un seul regex suffit)
+    $s = preg_replace('/[gjk]i[ae]n$/u', 'kian', $s);
+    
+    // chian -> kian
+     $s = str_replace('chian', 'kian', $s);  // ← ajout
+
+    // sian après consonne → kian  (ex. Petrossian → Petrokian)
+    $s = preg_replace('/(?<![aeiou])sian$/u', 'kian', $s);
+
+    // Normalisation résiduelle i/y/j
+    $s = str_replace(['iii','ii','ie','y'], ['i','i','i','i'], $s);
+
+    // H- initial muet
+    if (str_starts_with($s, 'h')) {
+        $s = substr($s, 1);
+    }
+
+    // g/k initial suivi de a/o/u → k (uniformise les occlusives vélaires)
+    if (preg_match('/^[gk][aou]/u', $s)) {
+        $s = 'k'.mb_substr($s, 1, null, 'UTF-8');
+    }
+
+    return $s;
+}
+
+function _step10_strip_separators(string $s): string
+{
+    return str_replace(['-',' '], '', $s);
+}
