@@ -1,4 +1,4 @@
-# Armenian-Surname-Normalizer
+# Armenian Surname Normalizer
 > PHP library for phonetic normalization of Armenian surnames transcribed in the Latin alphabet, designed as a component of a fuzzy-search system for Armenian diaspora archives.
 The goal is to group orthographic variants of the same surname under a single canonical form, enabling similarity-based search across corpora of primary-source records.
 ---
